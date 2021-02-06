@@ -36,17 +36,17 @@ int main(int argc, char ** argv) {
             << " bytes." << std::endl;
         // Donner le nombre de thread max dans chacune des directions
         for (int i = 0; i < 3; i++) {
-            std::cout << "Max thread in direction: " << deviceProp.maxThreadsDim[i]
+            std::cout << "Max threads per block in direction " << i << ": " << deviceProp.maxThreadsDim[i]
                 << " threads." << std::endl;
         }
 
-        std::cout << "Max thread per block: " << deviceProp.maxThreadsPerBlock
+        std::cout << "Max threads per block: " << deviceProp.maxThreadsPerBlock
             << " threads." << std::endl;
         // Donner le taille maximum de la grille pour chaque direction
         for (int i = 0; i < 3; i++) {
-            std::cout << "Max Grid size in direction: "
+            std::cout << "Max Grid size in direction " << i << ": " 
                 << deviceProp.maxGridSize[i]
-                << " threads." << std::endl;
+                << " blocks." << std::endl;
         }
         
         // Donner la taille du warp

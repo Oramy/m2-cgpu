@@ -12,7 +12,7 @@
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
 
-#define BLOCK_SIZE 256
+#define BLOCK_SIZE 32
 
 __global__ void compute_force_device(Agent* agents, Real na, Real rCohesion, Real wCohesion,
     Real wAlignment, Real wSeparation) {
@@ -70,18 +70,6 @@ std::vector<time_t> EulerParallelWorkspace::move()
 
     std::chrono::steady_clock::time_point start, end, start2, end2, start3, end3;
 
-    start = std::chrono::steady_clock::now();
-    
-    // Compute forces applied on specific agent
-    for(size_t k = 0; k< na; k++){
-      agents[k].compute_force(agents, na, k, rCohesion);
-
-      agents[k].direction = agents[k].cohesion*wCohesion
-        + agents[k].alignment*wAlignment
-        + agents[k].separation*wSeparation;
-    }
-    end = std::chrono::steady_clock::now();
-    times.push_back(std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count());
     start3 = std::chrono::steady_clock::now();
 
     size_t arrayMemSize = sizeof(Agent) * na;
@@ -91,16 +79,21 @@ std::vector<time_t> EulerParallelWorkspace::move()
     end3 = std::chrono::steady_clock::now();
     dim3 block(BLOCK_SIZE);
     dim3 grid(int(ceil((float(na)/BLOCK_SIZE))));
+    start = std::chrono::steady_clock::now();
+    compute_force_device << <grid, block >> > ((Agent*)agentsDP, na, rCohesion, wCohesion, wAlignment, wSeparation);
+    cudaDeviceSynchronize();
+    end = std::chrono::steady_clock::now();
     euler_method<<<grid, block>>>((Agent *) agentsDP, na, dt, max_speed, lx, ly, lz);
     cudaDeviceSynchronize();
     start2 = std::chrono::steady_clock::now();
-    cudaMemcpy(agents, agentsDP, 3*arrayMemSize, cudaMemcpyDeviceToHost);
+    cudaMemcpy(agents, agentsDP, arrayMemSize, cudaMemcpyDeviceToHost);
     cudaDeviceSynchronize();
 
     end2 = std::chrono::steady_clock::now();
+    times.push_back(std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count());
     times.push_back(std::chrono::duration_cast<std::chrono::nanoseconds>(end3 - start3).count()
                         + std::chrono::duration_cast<std::chrono::nanoseconds>(end2 - start2).count());
-    times.push_back(std::chrono::duration_cast<std::chrono::nanoseconds>(start2 - end3).count());
+    times.push_back(std::chrono::duration_cast<std::chrono::nanoseconds>(start2 - end).count());
     times.push_back(std::chrono::duration_cast<std::chrono::nanoseconds>(end2 - start).count());
     return times;
 }
