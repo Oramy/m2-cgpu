@@ -1,21 +1,35 @@
 #include "agent.hxx"
 
-Agent::Agent(const Vector &pos, const Vector &vel, const Vector &dir){
+CUDA_CALLABLE_MEMBER Agent::Agent(const Vector &pos, const Vector &vel, const Vector &dir){
   position = pos;
   velocity = vel;
   direction = dir;
   max_speed = 80.0;
   max_force = 20.0;
 }
+CUDA_CALLABLE_MEMBER Agent::Agent() {}
+CUDA_CALLABLE_MEMBER Agent& Agent::operator=(const Agent& agent) {
+    position = agent.position;
+    velocity = agent.velocity;
+    direction = agent.direction;
+    max_speed = agent.max_speed;
+    max_force = agent.max_force;
+    cohesion = agent.cohesion;
+    alignment = agent.alignment;
+    separation = agent.separation;
+    return *this;
+}
 
 
-void Agent::compute_force(Container &agent_list, size_t index, double rad) {
-  cohesion = Zeros();
-  alignment = Zeros();
-  separation = Zeros();
+CUDA_CALLABLE_MEMBER void Agent::compute_force(Agent * agent_list, size_t na, size_t index, double rad) {
+  cohesion.x = 0;
+  cohesion.y = 0;
+  cohesion.z = 0;
+  alignment.x = alignment.y = alignment.z = 0;
+  separation.x = separation.y = separation.z = 0;
 
   int count_c = 0 , count_s = 0 , count_a = 0 ;
-  for(size_t i = 0; i < agent_list.size(); i++) {
+  for(size_t i = 0; i < na; i++) {
     Real dist = (this->position - agent_list[i].position).norm();
     if (i != index && dist < rs && dist > 0.){
       separation += (this->position - agent_list[i].position).normalized()/dist;
@@ -71,15 +85,15 @@ void Agent::compute_force(Container &agent_list, size_t index, double rad) {
   }
 }
 
-size_t Agent::find_closest(Container &agent_list, size_t index) {
+CUDA_DEVICE size_t Agent::find_closest(Agent* agents, size_t na, size_t index) {
   size_t closest_agent = index;
   double min_dist = 1000;
 
   double dist;
 
-  for(size_t i = 0; i < agent_list.size(); i++) {
+  for (size_t i = 0; i < na; i++) {
     if (i != index) {
-      dist= (this->position - agent_list[i].position).norm();
+      dist= (this->position - agents[i].position).norm();
 
       if(dist < min_dist) {
         min_dist = dist;

@@ -4,6 +4,16 @@
 #include "types.hxx"
 #include "vector.hxx"
 
+#ifdef __CUDACC__
+#define CUDA_CALLABLE_MEMBER __host__ __device__
+#define CUDA_HOST __host__
+#define CUDA_DEVICE __device__
+#else
+#define CUDA_CALLABLE_MEMBER
+#define CUDA_HOST
+#define CUDA_DEVICE
+#endif 
+
 typedef enum {
   prey,
   predator,
@@ -27,11 +37,12 @@ class Agent{
     // Distance of influence
     double rc, rs, ra;
 
-    Agent(const Vector &pos, const Vector &vel, const Vector &dir);
+    CUDA_CALLABLE_MEMBER Agent(const Vector &pos, const Vector &vel, const Vector &dir);
+    CUDA_CALLABLE_MEMBER Agent();
 
-    void compute_force(Container &agent_list, size_t index, double dist);
-
-    size_t find_closest(Container &agent_list, size_t index);
+    CUDA_CALLABLE_MEMBER void compute_force(Agent* agents, size_t na, size_t index, double dist);
+    CUDA_CALLABLE_MEMBER size_t find_closest(Agent* agents, size_t na, size_t index);
+    CUDA_CALLABLE_MEMBER Agent& operator=(const Agent& agent);
 };
 
 #endif

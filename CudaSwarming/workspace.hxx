@@ -11,7 +11,7 @@
 class Workspace
 {
 protected:
-  Container agents;
+  Agent* agents;
   unsigned int na;
 
   Real dt;

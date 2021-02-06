@@ -15,6 +15,10 @@ public:
   virtual std::vector<time_t> move();
   EulerParallelWorkspace(ArgumentParser &parser);
   virtual std::vector<std::string> getTimeDescriptions();
+  ~EulerParallelWorkspace();
+protected:
+	void* agentsDP;
+	Agent* agentsH;
 };
 
 #endif

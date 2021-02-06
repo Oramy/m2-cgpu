@@ -49,6 +49,7 @@ void Workspace::init(){
   rng.seed(0);
 
   // Initialize agents
+  agents = new Agent[na];
   // This loop may be quite expensive due to random number generation
   for(size_t j = 0; j < na; j++){
     // Create random position
@@ -57,24 +58,24 @@ void Workspace::init(){
     Vector velocity(160 * (unif(rng) - 0.5), 160*(unif(rng) - 0.5), 160*(unif(rng) - 0.5));
 
     // Create random velocity
-    agents.push_back(Agent(position, velocity, Zeros()));
-    agents.back().max_force = max_force;
-    agents.back().max_speed = max_speed;
-    agents.back().ra = rAlignment;
-    agents.back().rc = rCohesion;
-    agents.back().rs = rSeparation;
+    agents[j] =  Agent(position, velocity, Zeros());
+    agents[j].max_force = max_force;
+    agents[j].max_speed = max_speed;
+    agents[j].ra = rAlignment;
+    agents[j].rc = rCohesion;
+    agents[j].rs = rSeparation;
   }
 }
 
 std::vector<time_t> Workspace::move()
 {
     std::vector<time_t> times;
-    std::chrono::steady_clock::time_point start, end;
+    std::chrono::steady_clock::time_point start, end, start2, end2;
 
     start = std::chrono::steady_clock::now();
     // Compute forces applied on specific agent
     for(size_t k = 0; k< na; k++){
-      agents[k].compute_force(agents, k, rCohesion);
+      agents[k].compute_force(agents, na, k, rCohesion);
 
       agents[k].direction = agents[k].cohesion*wCohesion
         + agents[k].alignment*wAlignment
@@ -83,7 +84,7 @@ std::vector<time_t> Workspace::move()
     end = std::chrono::steady_clock::now();
     times.push_back(std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count());
 
-    start = std::chrono::steady_clock::now();
+    start2 = std::chrono::steady_clock::now();
     // Time integration using euler method
     for(size_t k = 0; k< na; k++){
       agents[k].velocity += dt*agents[k].direction;
@@ -108,8 +109,9 @@ std::vector<time_t> Workspace::move()
         agents[k].position.z = 40;
 
     }
-    end = std::chrono::steady_clock::now();
-    times.push_back(std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count());
+    end2 = std::chrono::steady_clock::now();
+    times.push_back(std::chrono::duration_cast<std::chrono::nanoseconds>(end2 - start2).count());
+    times.push_back(std::chrono::duration_cast<std::chrono::nanoseconds>(end2 - start).count());
     return times;
 }
 
@@ -154,6 +156,7 @@ std::vector<std::string> Workspace::getTimeDescriptions() {
     std::vector<std::string> timeDescriptions;
     timeDescriptions.push_back("Workspace.forceComputingDuration");
     timeDescriptions.push_back("Workspace.eulerIntegrationDuration");
+    timeDescriptions.push_back("Workspace.totalTime");
     return timeDescriptions;
 }
 
